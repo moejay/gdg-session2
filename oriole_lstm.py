@@ -1,12 +1,10 @@
-import numpy as np
-import tensorflow as tf
-
+import datetime
 from os import listdir
 from os.path import isfile, join
-import re
 from random import randint
-import datetime
 
+import numpy as np
+import tensorflow as tf
 
 wordsList = np.load('wordsList.npy')
 print('Loaded the word list!')
@@ -19,97 +17,17 @@ print(len(wordsList))
 print(wordVectors.shape)
 
 
-maxSeqLength = 10 #Maximum length of sentence
 numDimensions = 300 #Dimensions for each word vector
 
 sess = tf.Session()
 positiveFiles = ['positiveReviews/' + f for f in listdir('positiveReviews/') if isfile(join('positiveReviews/', f))]
 negativeFiles = ['negativeReviews/' + f for f in listdir('negativeReviews/') if isfile(join('negativeReviews/', f))]
-numWords = []
-
-for pf in positiveFiles:
-    with open(pf, "r", encoding='utf-8') as f:
-        line = f.readline()
-        counter = len(line.split())
-        numWords.append(counter)
-print('Positive files finished')
-
-for nf in negativeFiles:
-    with open(nf, "r", encoding='utf-8') as f:
-        line = f.readline()
-        counter = len(line.split())
-        numWords.append(counter)
-print('Negative files finished')
-
-numFiles = len(numWords)
-print('The total number of files is', numFiles)
-print('The total number of words in the files is', sum(numWords))
-print('The average number of words in the files is', sum(numWords) / len(numWords))
 
 maxSeqLength = 250
-
-strip_special_chars = re.compile("[^A-Za-z0-9 ]+")
-
-def cleanSentences(string):
-    string = string.lower().replace("<br />", " ")
-    return re.sub(strip_special_chars, "", string.lower())
-
-# firstFile = np.zeros((maxSeqLength), dtype='int32')
-# with open(fname) as f:
-#     indexCounter = 0
-#     line=f.readline()
-#     cleanedLine = cleanSentences(line)
-#     split = cleanedLine.split()
-#     for word in split:
-#         try:
-#             firstFile[indexCounter] = wordsList.index(word)
-#         except ValueError:
-#             firstFile[indexCounter] = 399999 #Vector for unknown words
-#         indexCounter = indexCounter + 1
-#
-# print(firstFile)
-#
-# ids = np.zeros((numFiles, maxSeqLength), dtype='int32')
-# fileCounter = 0
-# for pf in positiveFiles:
-#    with open(pf, "r", encoding='utf-8') as f:
-#        indexCounter = 0
-#        line=f.readline()
-#        cleanedLine = cleanSentences(line)
-#        split = cleanedLine.split()
-#        for word in split:
-#            try:
-#                ids[fileCounter][indexCounter] = wordsList.index(word)
-#            except ValueError:
-#                ids[fileCounter][indexCounter] = 399999 #Vector for unkown words
-#            indexCounter = indexCounter + 1
-#            if indexCounter >= maxSeqLength:
-#                break
-#        fileCounter = fileCounter + 1
-#
-# for nf in negativeFiles:
-#    with open(nf, "r", encoding='utf-8') as f:
-#        indexCounter = 0
-#        line=f.readline()
-#        cleanedLine = cleanSentences(line)
-#        split = cleanedLine.split()
-#        for word in split:
-#            try:
-#                ids[fileCounter][indexCounter] = wordsList.index(word)
-#            except ValueError:
-#                ids[fileCounter][indexCounter] = 399999 #Vector for unkown words
-#            indexCounter = indexCounter + 1
-#            if indexCounter >= maxSeqLength:
-#                break
-#        fileCounter = fileCounter + 1
-# #Pass into embedding function and see if it evaluates.
-#
-# np.save('idsMatrix', ids)
-
 ids = np.load('idsMatrix.npy')
 
-batchSize = 48
-lstmUnits = 128
+batchSize = 50
+lstmUnits = 64
 numClasses = 2
 iterations = 100000
 
@@ -140,31 +58,30 @@ def getTestBatch():
 
 tf.reset_default_graph()
 
-labels = tf.placeholder(tf.float32, [batchSize, numClasses])
-input_data = tf.placeholder(tf.int32, [batchSize, maxSeqLength])
+with tf.name_scope('input') as scope:
+    labels = tf.placeholder(tf.float32, [batchSize, numClasses], name='input_labels')
+    input_data = tf.placeholder(tf.int32, [batchSize, maxSeqLength], name='input_data')
 
-data = tf.Variable(tf.zeros([batchSize, maxSeqLength, numDimensions]),dtype=tf.float32)
-data = tf.nn.embedding_lookup(wordVectors,input_data)
+with tf.name_scope('word2vec'):
+    data = tf.nn.embedding_lookup(wordVectors,input_data, name='word2vec')
 
-lstmCell1 = tf.nn.rnn_cell.BasicLSTMCell(lstmUnits, activation=tf.nn.relu)
-lstmCell2 = tf.nn.rnn_cell.BasicLSTMCell(lstmUnits, activation=tf.nn.relu)
-lstmCell = tf.nn.rnn_cell.MultiRNNCell([lstmCell1, lstmCell2], state_is_tuple=True)
-#lstmCell = tf.nn.rnn_cell.BaslicLSTMCell(lstmUnits))
+with tf.name_scope('sentiment_network'):
+    lstmCell= tf.nn.rnn_cell.LSTMCell(lstmUnits, activation=tf.nn.relu, state_is_tuple=True)
+    # lstmCell = tf.nn.rnn_cell.DropoutWrapper(cell=lstmCell, output_keep_prob=0.75)
+    lstmCell = tf.nn.rnn_cell.MultiRNNCell([lstmCell], state_is_tuple=True)
+    value, _ = tf.nn.dynamic_rnn(lstmCell, data, dtype=tf.float32)
 
-lstmCell = tf.nn.rnn_cell.DropoutWrapper(cell=lstmCell, output_keep_prob=0.75)
-value, _ = tf.nn.dynamic_rnn(lstmCell, data, dtype=tf.float32)
+    weight = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]), name='Weights')
+    bias = tf.Variable(tf.constant(0.1, shape=[numClasses]), name='Biases')
+    value = tf.transpose(value, [1, 0, 2])
+    last = tf.gather(value, int(value.get_shape()[0]) - 1)
+    prediction = (tf.matmul(last, weight) + bias)
 
-weight = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]))
-bias = tf.Variable(tf.constant(0.1, shape=[numClasses]))
-value = tf.transpose(value, [1, 0, 2])
-last = tf.gather(value, int(value.get_shape()[0]) - 1)
-prediction = (tf.matmul(last, weight) + bias)
+    correctPred = tf.equal(tf.argmax(prediction,1), tf.argmax(labels,1))
+    accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
 
-correctPred = tf.equal(tf.argmax(prediction,1), tf.argmax(labels,1))
-accuracy = tf.reduce_mean(tf.cast(correctPred, tf.float32))
-
-loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=labels))
-optimizer = tf.train.AdamOptimizer().minimize(loss)
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=prediction, labels=labels), name='loss')
+    optimizer = tf.train.AdamOptimizer().minimize(loss, name='AdamOptimizer')
 
 tf.summary.scalar('Loss', loss)
 tf.summary.scalar('Accuracy', accuracy)
@@ -181,21 +98,18 @@ for i in range(iterations):
    #Next Batch of reviews
    nextBatch, nextBatchLabels = getTrainBatch()
    sess.run(optimizer, {input_data: nextBatch, labels: nextBatchLabels})
-
    #Write summary to Tensorboard
    if (i % 50 == 0):
+       print("dumping log: %d" % i)
        summary = sess.run(merged, {input_data: nextBatch, labels: nextBatchLabels})
        writer.add_summary(summary, i)
 
    #Save the network every 10,000 training iterations
    if (i % 10000 == 0 and i != 0):
-       save_path = saver.save(sess, "models2/pretrained_multi_lstm-48-128.ckpt", global_step=i)
+       dt = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+       save_path = saver.save(sess, "models/%s-%s-%s/pretrained_relu.ckpt" % (dt, batchSize, lstmUnits) , global_step=i)
        print("saved to %s" % save_path)
 writer.close()
-
-# sess = tf.InteractiveSession()
-# saver = tf.train.Saver()
-# saver.restore(sess, tf.train.latest_checkpoint('models'))
 
 iterations = 10
 for i in range(iterations):
