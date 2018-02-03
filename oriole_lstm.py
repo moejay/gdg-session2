@@ -3,7 +3,6 @@ import tensorflow as tf
 
 from os import listdir
 from os.path import isfile, join
-import matplotlib.pyplot as plt
 import re
 from random import randint
 import datetime
@@ -19,32 +18,15 @@ print ('Loaded the word vectors!')
 print(len(wordsList))
 print(wordVectors.shape)
 
-baseballIndex = wordsList.index('baseball')
-wordVectors[baseballIndex]
-
 
 maxSeqLength = 10 #Maximum length of sentence
 numDimensions = 300 #Dimensions for each word vector
-firstSentence = np.zeros((maxSeqLength), dtype='int32')
-firstSentence[0] = wordsList.index("i")
-firstSentence[1] = wordsList.index("thought")
-firstSentence[2] = wordsList.index("the")
-firstSentence[3] = wordsList.index("movie")
-firstSentence[4] = wordsList.index("was")
-firstSentence[5] = wordsList.index("incredible")
-firstSentence[6] = wordsList.index("and")
-firstSentence[7] = wordsList.index("inspiring")
-#firstSentence[8] and firstSentence[9] are going to be 0
-print(firstSentence.shape)
-print(firstSentence) #Shows the row index for each word
 
-with tf.Session() as sess:
-    print(tf.nn.embedding_lookup(wordVectors,firstSentence).eval().shape)
-
-
+sess = tf.Session()
 positiveFiles = ['positiveReviews/' + f for f in listdir('positiveReviews/') if isfile(join('positiveReviews/', f))]
 negativeFiles = ['negativeReviews/' + f for f in listdir('negativeReviews/') if isfile(join('negativeReviews/', f))]
 numWords = []
+
 for pf in positiveFiles:
     with open(pf, "r", encoding='utf-8') as f:
         line = f.readline()
@@ -64,17 +46,7 @@ print('The total number of files is', numFiles)
 print('The total number of words in the files is', sum(numWords))
 print('The average number of words in the files is', sum(numWords) / len(numWords))
 
-plt.hist(numWords, 50)
-plt.xlabel('Sequence Length')
-plt.ylabel('Frequency')
-plt.axis([0, 1200, 0, 8000])
-plt.show()
-maxSeqLength = 250
-
-fname = positiveFiles[3] #Can use any valid index (not just 3)
-with open(fname) as f:
-    for lines in f:
-        print(lines)
+# maxSeqLength = 250
 
 strip_special_chars = re.compile("[^A-Za-z0-9 ]+")
 
@@ -82,59 +54,59 @@ def cleanSentences(string):
     string = string.lower().replace("<br />", " ")
     return re.sub(strip_special_chars, "", string.lower())
 
-firstFile = np.zeros((maxSeqLength), dtype='int32')
-with open(fname) as f:
-    indexCounter = 0
-    line=f.readline()
-    cleanedLine = cleanSentences(line)
-    split = cleanedLine.split()
-    for word in split:
-        try:
-            firstFile[indexCounter] = wordsList.index(word)
-        except ValueError:
-            firstFile[indexCounter] = 399999 #Vector for unknown words
-        indexCounter = indexCounter + 1
+# firstFile = np.zeros((maxSeqLength), dtype='int32')
+# with open(fname) as f:
+#     indexCounter = 0
+#     line=f.readline()
+#     cleanedLine = cleanSentences(line)
+#     split = cleanedLine.split()
+#     for word in split:
+#         try:
+#             firstFile[indexCounter] = wordsList.index(word)
+#         except ValueError:
+#             firstFile[indexCounter] = 399999 #Vector for unknown words
+#         indexCounter = indexCounter + 1
+#
+# print(firstFile)
+#
+# ids = np.zeros((numFiles, maxSeqLength), dtype='int32')
+# fileCounter = 0
+# for pf in positiveFiles:
+#    with open(pf, "r", encoding='utf-8') as f:
+#        indexCounter = 0
+#        line=f.readline()
+#        cleanedLine = cleanSentences(line)
+#        split = cleanedLine.split()
+#        for word in split:
+#            try:
+#                ids[fileCounter][indexCounter] = wordsList.index(word)
+#            except ValueError:
+#                ids[fileCounter][indexCounter] = 399999 #Vector for unkown words
+#            indexCounter = indexCounter + 1
+#            if indexCounter >= maxSeqLength:
+#                break
+#        fileCounter = fileCounter + 1
+#
+# for nf in negativeFiles:
+#    with open(nf, "r", encoding='utf-8') as f:
+#        indexCounter = 0
+#        line=f.readline()
+#        cleanedLine = cleanSentences(line)
+#        split = cleanedLine.split()
+#        for word in split:
+#            try:
+#                ids[fileCounter][indexCounter] = wordsList.index(word)
+#            except ValueError:
+#                ids[fileCounter][indexCounter] = 399999 #Vector for unkown words
+#            indexCounter = indexCounter + 1
+#            if indexCounter >= maxSeqLength:
+#                break
+#        fileCounter = fileCounter + 1
+# #Pass into embedding function and see if it evaluates.
+#
+# np.save('idsMatrix', ids)
 
-print(firstFile)
-
-ids = np.zeros((numFiles, maxSeqLength), dtype='int32')
-fileCounter = 0
-for pf in positiveFiles:
-   with open(pf, "r", encoding='utf-8') as f:
-       indexCounter = 0
-       line=f.readline()
-       cleanedLine = cleanSentences(line)
-       split = cleanedLine.split()
-       for word in split:
-           try:
-               ids[fileCounter][indexCounter] = wordsList.index(word)
-           except ValueError:
-               ids[fileCounter][indexCounter] = 399999 #Vector for unkown words
-           indexCounter = indexCounter + 1
-           if indexCounter >= maxSeqLength:
-               break
-       fileCounter = fileCounter + 1
-
-for nf in negativeFiles:
-   with open(nf, "r", encoding='utf-8') as f:
-       indexCounter = 0
-       line=f.readline()
-       cleanedLine = cleanSentences(line)
-       split = cleanedLine.split()
-       for word in split:
-           try:
-               ids[fileCounter][indexCounter] = wordsList.index(word)
-           except ValueError:
-               ids[fileCounter][indexCounter] = 399999 #Vector for unkown words
-           indexCounter = indexCounter + 1
-           if indexCounter >= maxSeqLength:
-               break
-       fileCounter = fileCounter + 1
-#Pass into embedding function and see if it evaluates.
-
-np.save('idsMatrix', ids)
-
-# ids = np.load('idsMatrix.npy')
+ids = np.load('idsMatrix.npy')
 
 batchSize = 48
 lstmUnits = 128
