@@ -46,7 +46,7 @@ print('The total number of files is', numFiles)
 print('The total number of words in the files is', sum(numWords))
 print('The average number of words in the files is', sum(numWords) / len(numWords))
 
-# maxSeqLength = 250
+maxSeqLength = 250
 
 strip_special_chars = re.compile("[^A-Za-z0-9 ]+")
 
