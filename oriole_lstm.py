@@ -29,7 +29,7 @@ ids = np.load('idsMatrix.npy')
 batchSize = 50
 lstmUnits = 64
 numClasses = 2
-iterations = 100000
+iterations = 50000
 
 def getTrainBatch():
     labels = []
@@ -66,9 +66,11 @@ with tf.name_scope('word2vec'):
     data = tf.nn.embedding_lookup(wordVectors,input_data, name='word2vec')
 
 with tf.name_scope('sentiment_network'):
-    lstmCell= tf.nn.rnn_cell.LSTMCell(lstmUnits, activation=tf.nn.relu, state_is_tuple=True)
-    # lstmCell = tf.nn.rnn_cell.DropoutWrapper(cell=lstmCell, output_keep_prob=0.75)
-    lstmCell = tf.nn.rnn_cell.MultiRNNCell([lstmCell], state_is_tuple=True)
+    c1= tf.nn.rnn_cell.LSTMCell(lstmUnits, state_is_tuple=True)
+    c1 = tf.nn.rnn_cell.DropoutWrapper(cell=c1)
+    c2 = tf.nn.rnn_cell.LSTMCell(lstmUnits, state_is_tuple=True)
+    c2 = tf.nn.rnn_cell.DropoutWrapper(cell=c2)
+    lstmCell = tf.nn.rnn_cell.MultiRNNCell([c1, c2], state_is_tuple=True)
     value, _ = tf.nn.dynamic_rnn(lstmCell, data, dtype=tf.float32)
 
     weight = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]), name='Weights')
@@ -103,11 +105,12 @@ for i in range(iterations):
        print("dumping log: %d" % i)
        summary = sess.run(merged, {input_data: nextBatch, labels: nextBatchLabels})
        writer.add_summary(summary, i)
+       writer.flush()
 
    #Save the network every 10,000 training iterations
    if (i % 10000 == 0 and i != 0):
        dt = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-       save_path = saver.save(sess, "models/%s-%s-%s/pretrained_relu.ckpt" % (dt, batchSize, lstmUnits) , global_step=i)
+       save_path = saver.save(sess, "models/%s-%s-%s/pretrained.ckpt" % (dt, batchSize, lstmUnits) , global_step=i)
        print("saved to %s" % save_path)
 writer.close()
 
