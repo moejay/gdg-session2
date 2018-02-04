@@ -58,20 +58,23 @@ def getTestBatch():
 
 tf.reset_default_graph()
 
-with tf.name_scope('input') as scope:
-    labels = tf.placeholder(tf.float32, [batchSize, numClasses], name='input_labels')
-    input_data = tf.placeholder(tf.int32, [batchSize, maxSeqLength], name='input_data')
+labels = tf.placeholder(tf.float32, [batchSize, numClasses], name='labels')
+input_data = tf.placeholder(tf.int32, [batchSize, maxSeqLength], name='input_data')
 
 with tf.name_scope('word2vec'):
     data = tf.nn.embedding_lookup(wordVectors,input_data, name='word2vec')
 
 with tf.name_scope('sentiment_network'):
-    c1= tf.nn.rnn_cell.LSTMCell(lstmUnits, state_is_tuple=True)
-    c1 = tf.nn.rnn_cell.DropoutWrapper(cell=c1)
-    c2 = tf.nn.rnn_cell.LSTMCell(lstmUnits, state_is_tuple=True)
-    c2 = tf.nn.rnn_cell.DropoutWrapper(cell=c2)
-    lstmCell = tf.nn.rnn_cell.MultiRNNCell([c1, c2], state_is_tuple=True)
-    value, _ = tf.nn.dynamic_rnn(lstmCell, data, dtype=tf.float32)
+    # 1 Let's create one or more LSTMCell
+    # https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell
+
+    # 2 Connect the cells with a MultiRNNCell
+    # https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/MultiRNNCell
+
+    # 3 Create the network ( hint: use tf.nn.dynamic_rnn )
+    # and assign it to variable 'value'
+    # https://www.tensorflow.org/api_docs/python/tf/nn/dynamic_rnn
+    # value, _ = tf.nn.dynamic_rnn
 
     weight = tf.Variable(tf.truncated_normal([lstmUnits, numClasses]), name='Weights')
     bias = tf.Variable(tf.constant(0.1, shape=[numClasses]), name='Biases')
@@ -95,6 +98,8 @@ writer = tf.summary.FileWriter(logdir, sess.graph)
 sess = tf.InteractiveSession()
 saver = tf.train.Saver()
 sess.run(tf.global_variables_initializer())
+
+print("You can open tensorboard to monitor the progress")
 
 for i in range(iterations):
    #Next Batch of reviews
