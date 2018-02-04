@@ -1,0 +1,5 @@
+model_checkpoint_path: "pretrained.ckpt-40000"
+all_model_checkpoint_paths: "..\\20180203-204907-50-64\\pretrained.ckpt-10000"
+all_model_checkpoint_paths: "..\\20180203-212016-50-64\\pretrained.ckpt-20000"
+all_model_checkpoint_paths: "..\\20180203-215134-50-64\\pretrained.ckpt-30000"
+all_model_checkpoint_paths: "pretrained.ckpt-40000"
