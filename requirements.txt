@@ -1,11 +1,14 @@
 absl-py==0.1.10
 bleach==1.5.0
+certifi==2018.1.18
+chardet==3.0.4
 colorama==0.3.9
 cycler==0.10.0
 decorator==4.2.1
 entrypoints==0.2.3
 futures==3.1.1
 html5lib==0.9999999
+idna==2.6
 ipykernel==4.8.0
 ipython==6.2.1
 ipython-genutils==0.2.0
@@ -25,6 +28,7 @@ nbconvert==5.3.1
 nbformat==4.4.0
 notebook==5.4.0
 numpy==1.14.0
+oauthlib==2.0.6
 pandocfilters==1.4.2
 parso==0.1.1
 pickleshare==0.7.4
@@ -32,11 +36,16 @@ prompt-toolkit==1.0.15
 protobuf==3.5.1
 Pygments==2.2.0
 pyparsing==2.2.0
+pypiwin32==219
 python-dateutil==2.6.1
+pyttsx3==2.7
 pytz==2017.3
+pywin32==222
 pywinpty==0.5.1
 pyzmq==16.0.4
 qtconsole==4.3.1
+requests==2.18.4
+requests-oauthlib==0.8.0
 scikit-learn==0.19.1
 scipy==1.0.0
 Send2Trash==1.4.2
@@ -50,6 +59,7 @@ testpath==0.3.1
 tornado==4.5.3
 traitlets==4.3.2
 tweepy==3.5.0
+urllib3==1.22
 wcwidth==0.1.7
 webencodings==0.5.1
 Werkzeug==0.14.1
