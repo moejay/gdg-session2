@@ -19,17 +19,14 @@ print(wordVectors.shape)
 
 numDimensions = 300 #Dimensions for each word vector
 
-sess = tf.Session()
-positiveFiles = ['positiveReviews/' + f for f in listdir('positiveReviews/') if isfile(join('positiveReviews/', f))]
-negativeFiles = ['negativeReviews/' + f for f in listdir('negativeReviews/') if isfile(join('negativeReviews/', f))]
-
 maxSeqLength = 250
 ids = np.load('idsMatrix.npy')
 
 batchSize = 50
 lstmUnits = 64
-numClasses = 2
+
 iterations = 50000
+numClasses = 2
 
 def getTrainBatch():
     labels = []
@@ -67,8 +64,7 @@ with tf.name_scope('word2vec'):
 with tf.name_scope('sentiment_network'):
     # 1 Let's create one or more LSTMCell
     # https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/LSTMCell
-
-    # 2 Connect the cells with a MultiRNNCell
+    # 2-optional Connect the cells with a MultiRNNCell
     # https://www.tensorflow.org/api_docs/python/tf/contrib/rnn/MultiRNNCell
 
     # 3 Create the network ( hint: use tf.nn.dynamic_rnn )
@@ -92,10 +88,10 @@ tf.summary.scalar('Loss', loss)
 tf.summary.scalar('Accuracy', accuracy)
 merged = tf.summary.merge_all()
 logdir = "tensorboard/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
+
+
+sess = tf.Session()
 writer = tf.summary.FileWriter(logdir, sess.graph)
-
-
-sess = tf.InteractiveSession()
 saver = tf.train.Saver()
 sess.run(tf.global_variables_initializer())
 
